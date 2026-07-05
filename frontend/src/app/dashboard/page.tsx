@@ -1,19 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { apiPath } from "@/lib/api-base";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import type { DashboardData } from "@/types";
 
 async function getDashboard(token: string): Promise<DashboardData | null> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    }
-  );
+  const response = await fetch(apiPath("/dashboard"), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
 
   if (!response.ok) return null;
   return response.json();
@@ -41,7 +39,8 @@ export default async function DashboardPage() {
         <div className="glass-panel max-w-md rounded-[2rem] p-8 text-center">
           <h1 className="text-xl font-medium">API unavailable</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Start Laravel at localhost:8000 and run migrations, then refresh.
+            Kiểm tra DATABASE_URL và SUPABASE_SERVICE_ROLE_KEY trong
+            .env.local, rồi refresh.
           </p>
         </div>
       </div>

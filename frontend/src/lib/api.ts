@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { apiPath } from "@/lib/api-base";
 import type {
   DashboardData,
   Expense,
@@ -8,8 +9,6 @@ import type {
   Task,
   User,
 } from "@/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 async function getToken(): Promise<string | null> {
   const supabase = createClient();
@@ -25,7 +24,7 @@ async function apiFetch<T>(
 ): Promise<T> {
   const token = await getToken();
 
-  const response = await fetch(`${API_URL}/api${path}`, {
+  const response = await fetch(apiPath(path), {
     ...options,
     headers: {
       "Content-Type": "application/json",
