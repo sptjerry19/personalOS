@@ -16,3 +16,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/test', function () {
+    return response()->json([
+        'status' => 'ok',
+        'app' => config('app.name'),
+        'message' => 'Laravel API is running',
+    ]);
+});
