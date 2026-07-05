@@ -24,16 +24,18 @@ export async function listCategoriesForUser(user: DbUser): Promise<ExpenseCatego
   }>(
     `SELECT c.id, c.name, c.icon, c.color,
             b.monthly_budget,
-            COALESCE(SUM(e.amount), 0) AS month_spent
+            COALESCE(spent.total, 0) AS month_spent
      FROM ${categoriesTable} c
      LEFT JOIN ${budgetsTable} b
        ON b.category_id = c.id AND b.user_id = $1
-     LEFT JOIN ${expensesTable} e ON e.category_id = c.id
-     LEFT JOIN ${eventsTable} ev
-       ON ev.id = e.event_id
-      AND ev.user_id = $1
-      AND ev.occurred_at >= $2
-     GROUP BY c.id, c.name, c.icon, c.color, b.monthly_budget
+     LEFT JOIN (
+       SELECT e.category_id, SUM(e.amount) AS total
+       FROM ${expensesTable} e
+       INNER JOIN ${eventsTable} ev ON ev.id = e.event_id
+       WHERE ev.user_id = $1
+         AND ev.occurred_at >= $2
+       GROUP BY e.category_id
+     ) spent ON spent.category_id = c.id
      ORDER BY c.name ASC`,
     [user.id, monthStart]
   );
