@@ -16,45 +16,11 @@ function resolveName(supabaseUser: Record<string, unknown>): string {
   );
 }
 
-export async function requireUser(request: Request): Promise<DbUser> {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
-
-  if (!token) {
-    throw Response.json({ message: "Unauthenticated." }, { status: 401 });
-  }
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceKey) {
-    throw Response.json(
-      { message: "Supabase is not configured." },
-      { status: 500 }
-    );
-  }
-
-  const response = await fetch(
-    `${supabaseUrl.replace(/\/$/, "")}/auth/v1/user`,
-    {
-      headers: {
-        apikey: serviceKey,
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw Response.json({ message: "Invalid token." }, { status: 401 });
-  }
-
-  const supabaseUser = (await response.json()) as Record<string, unknown>;
+async function syncUser(supabaseUser: Record<string, unknown>): Promise<DbUser> {
   const email = supabaseUser.email as string | undefined;
 
   if (!email) {
-    throw Response.json({ message: "Invalid user payload." }, { status: 401 });
+    throw new Error("Invalid user payload.");
   }
 
   const usersTable = table("users");
@@ -91,6 +57,51 @@ export async function requireUser(request: Request): Promise<DbUser> {
   );
 
   return created.rows[0];
+}
+
+export async function authenticateToken(token: string): Promise<DbUser> {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    throw new Error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not configured.");
+  }
+
+  const response = await fetch(
+    `${supabaseUrl.replace(/\/$/, "")}/auth/v1/user`,
+    {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Invalid token.");
+  }
+
+  const supabaseUser = (await response.json()) as Record<string, unknown>;
+  return syncUser(supabaseUser);
+}
+
+export async function requireUser(request: Request): Promise<DbUser> {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
+
+  if (!token) {
+    throw Response.json({ message: "Unauthenticated." }, { status: 401 });
+  }
+
+  try {
+    return await authenticateToken(token);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unauthorized.";
+    const status = message.includes("not configured") ? 500 : 401;
+    throw Response.json({ message }, { status });
+  }
 }
 
 export async function withAuth(
