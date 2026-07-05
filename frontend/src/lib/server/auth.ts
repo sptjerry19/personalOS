@@ -6,6 +6,7 @@ export type DbUser = {
   name: string;
   email: string;
   avatar_url: string | null;
+  salary: number | null;
 };
 
 function resolveName(supabaseUser: Record<string, unknown>): string {
@@ -30,8 +31,8 @@ async function syncUser(supabaseUser: Record<string, unknown>): Promise<DbUser> 
     ((supabaseUser.user_metadata as Record<string, unknown> | undefined)
       ?.avatar_url as string | undefined) ?? null;
 
-  const existing = await query<DbUser>(
-    `SELECT id, supabase_id, name, email, avatar_url
+  const existing = await query<DbUser & { salary: string | null }>(
+    `SELECT id, supabase_id, name, email, avatar_url, salary
      FROM ${usersTable}
      WHERE supabase_id = $1
      LIMIT 1`,
@@ -39,24 +40,42 @@ async function syncUser(supabaseUser: Record<string, unknown>): Promise<DbUser> 
   );
 
   if (existing.rows[0]) {
-    const updated = await query<DbUser>(
+    const updated = await query<DbUser & { salary: string | null }>(
       `UPDATE ${usersTable}
        SET email = $2, name = $3, avatar_url = COALESCE($4, avatar_url), updated_at = NOW()
        WHERE supabase_id = $1
-       RETURNING id, supabase_id, name, email, avatar_url`,
+       RETURNING id, supabase_id, name, email, avatar_url, salary`,
       [supabaseId, email, name, avatarUrl]
     );
-    return updated.rows[0];
+    return mapDbUser(updated.rows[0]);
   }
 
-  const created = await query<DbUser>(
+  const created = await query<DbUser & { salary: string | null }>(
     `INSERT INTO ${usersTable} (supabase_id, name, email, avatar_url, password, created_at, updated_at)
      VALUES ($1, $2, $3, $4, NULL, NOW(), NOW())
-     RETURNING id, supabase_id, name, email, avatar_url`,
+     RETURNING id, supabase_id, name, email, avatar_url, salary`,
     [supabaseId, name, email, avatarUrl]
   );
 
-  return created.rows[0];
+  return mapDbUser(created.rows[0]);
+}
+
+function mapDbUser(row: {
+  id: number;
+  supabase_id: string;
+  name: string;
+  email: string;
+  avatar_url: string | null;
+  salary: string | null;
+}): DbUser {
+  return {
+    id: row.id,
+    supabase_id: row.supabase_id,
+    name: row.name,
+    email: row.email,
+    avatar_url: row.avatar_url,
+    salary: row.salary != null ? parseFloat(row.salary) : null,
+  };
 }
 
 export async function authenticateToken(token: string): Promise<DbUser> {

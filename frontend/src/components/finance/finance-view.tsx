@@ -7,6 +7,7 @@ import { BentoCard } from "@/components/dashboard/bento";
 import { QuickAddCommand } from "@/components/quick-add/command-palette";
 import { CategoryDialog } from "@/components/finance/category-dialog";
 import { BudgetManagerDialog } from "@/components/finance/budget-manager-dialog";
+import { SalaryDialog } from "@/components/finance/salary-dialog";
 import { ExpenseEditDialog } from "@/components/finance/expense-edit-dialog";
 import { CategorySpendingList } from "@/components/finance/category-spending-list";
 import { api } from "@/lib/api";
@@ -42,6 +43,8 @@ export function FinanceView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+  const [salaryDialogOpen, setSalaryDialogOpen] = useState(false);
+  const [monthlySalary, setMonthlySalary] = useState<number | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [filterCategoryId, setFilterCategoryId] = useState<number | null>(null);
   const [filterUncategorized, setFilterUncategorized] = useState(false);
@@ -55,6 +58,15 @@ export function FinanceView() {
   async function loadCategories() {
     const categoryRes = await api.getCategories();
     setCategories(categoryRes);
+  }
+
+  async function loadSalary() {
+    try {
+      const settings = await api.getSettings();
+      setMonthlySalary(settings.salary);
+    } catch {
+      setMonthlySalary(null);
+    }
   }
 
   async function loadExpenses() {
@@ -78,6 +90,7 @@ export function FinanceView() {
 
   useEffect(() => {
     loadCategories();
+    loadSalary();
   }, []);
 
   useEffect(() => {
@@ -151,6 +164,10 @@ export function FinanceView() {
             <Button variant="outline" onClick={() => setCategoryDialogOpen(true)}>
               <Tag className="size-4" />
               Thêm danh mục
+            </Button>
+            <Button variant="outline" onClick={() => setSalaryDialogOpen(true)}>
+              <Settings2 className="size-4" />
+              Lương tháng
             </Button>
             <Button variant="outline" onClick={() => setBudgetDialogOpen(true)}>
               <Settings2 className="size-4" />
@@ -342,6 +359,14 @@ export function FinanceView() {
         onOpenChange={setBudgetDialogOpen}
         categories={categories}
         onUpdated={loadData}
+      />
+      <SalaryDialog
+        open={salaryDialogOpen}
+        onOpenChange={setSalaryDialogOpen}
+        currentSalary={monthlySalary}
+        onUpdated={() => {
+          loadSalary();
+        }}
       />
       <ExpenseEditDialog
         expense={editingExpense}

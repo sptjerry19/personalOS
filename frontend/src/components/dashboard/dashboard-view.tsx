@@ -15,12 +15,18 @@ import type { DashboardData } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, Search, Settings2 } from "lucide-react";
+import { SalaryDialog } from "@/components/finance/salary-dialog";
+import { useRouter } from "next/navigation";
 
 export function DashboardView({ data }: { data: DashboardData }) {
+  const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
+  const [salaryOpen, setSalaryOpen] = useState(false);
   const categorySpending = data.widgets.category_spending ?? [];
   const overBudgetCount = data.summary.over_budget_categories ?? 0;
+  const salary = data.summary.salary ?? data.summary.budget;
+  const noSalary = !salary || salary <= 0;
 
   return (
     <>
@@ -62,13 +68,37 @@ export function DashboardView({ data }: { data: DashboardData }) {
 
           <BentoCard
             title="Budget pulse"
-            subtitle="Monthly envelope"
+            subtitle="Hạn mức theo lương tháng"
             className="md:col-span-5"
           >
-            <BudgetBar
-              spent={data.summary.month_expense}
-              budget={data.summary.budget}
-            />
+            <div className="mb-3 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-white/10"
+                onClick={() => setSalaryOpen(true)}
+              >
+                <Settings2 className="size-4" />
+                {noSalary ? "Đặt lương tháng" : "Sửa lương"}
+              </Button>
+            </div>
+            {noSalary ? (
+              <p className="text-sm text-muted-foreground">
+                Chưa đặt lương tháng. Bấm &quot;Đặt lương tháng&quot; để thiết
+                lập hạn mức chi tiêu.
+              </p>
+            ) : (
+              <BudgetBar
+                spent={data.summary.month_expense}
+                budget={data.summary.budget}
+              />
+            )}
+            {data.summary.over_monthly_budget ? (
+              <div className="mt-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <AlertTriangle className="size-4 shrink-0" />
+                Đã vượt hạn mức lương tháng
+              </div>
+            ) : null}
             {overBudgetCount > 0 ? (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 <AlertTriangle className="size-4 shrink-0" />
@@ -162,6 +192,12 @@ export function DashboardView({ data }: { data: DashboardData }) {
       </AppShell>
 
       <QuickAddCommand open={commandOpen} onOpenChange={setCommandOpen} />
+      <SalaryDialog
+        open={salaryOpen}
+        onOpenChange={setSalaryOpen}
+        currentSalary={salary}
+        onUpdated={() => router.refresh()}
+      />
     </>
   );
 }

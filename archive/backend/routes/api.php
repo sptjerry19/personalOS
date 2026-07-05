@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\QuickAddController;
+use App\Http\Controllers\settingController;
 use App\Http\Controllers\TaskController;
 use App\Http\Middleware\VerifySupabaseToken;
 use Illuminate\Http\Request;
@@ -25,6 +26,9 @@ Route::middleware(VerifySupabaseToken::class)->group(function () {
     Route::apiResource('expenses', ExpenseController::class)->except(['show']);
 
     Route::apiResource('tasks', TaskController::class)->except(['show']);
+
+    Route::get('/settings', [settingController::class, 'index']);
+    Route::put('/settings', [settingController::class, 'update']);
 });
 
 Route::get('/health', function () {

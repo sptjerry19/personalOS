@@ -4,6 +4,7 @@ export type User = {
   name: string;
   email: string;
   avatar_url: string | null;
+  salary?: number | null;
 };
 
 export type ExpenseCategory = {
@@ -54,8 +55,10 @@ export type DashboardData = {
     month_expense: number;
     budget: number;
     budget_remaining: number;
+    salary?: number | null;
     pending_tasks: number;
     over_budget_categories?: number;
+    over_monthly_budget?: boolean;
   };
   widgets: {
     today_expenses: Expense[];

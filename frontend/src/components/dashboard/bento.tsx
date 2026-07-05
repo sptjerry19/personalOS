@@ -104,7 +104,8 @@ export function BudgetBar({
   spent: number;
   budget: number;
 }) {
-  const pct = Math.min(100, Math.round((spent / budget) * 100));
+  const pct =
+    budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
 
   return (
     <div className="space-y-3">

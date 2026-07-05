@@ -49,6 +49,12 @@ async function apiFetch<T>(
 
 export const api = {
   getUser: () => apiFetch<User>("/user"),
+  getSettings: () => apiFetch<{ salary: number | null }>("/settings"),
+  updateSalary: (salary: number) =>
+    apiFetch<{ salary: number | null }>("/settings", {
+      method: "PUT",
+      body: JSON.stringify({ salary }),
+    }),
   getDashboard: () => apiFetch<DashboardData>("/dashboard"),
   previewQuickAdd: (input: string) =>
     apiFetch<QuickAddPreview>("/quick-add/preview", {

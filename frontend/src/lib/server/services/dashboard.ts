@@ -93,13 +93,10 @@ export async function getDashboardForUser(user: DbUser): Promise<DashboardData> 
   );
 
   const categorySpending = await monthSpendingByCategory(user);
-  const totalBudget = categorySpending.reduce(
-    (sum, c) => sum + (c.monthly_budget ?? 0),
-    0
-  );
   const monthExpense = parseFloat(monthExpenseResult.rows[0]?.total ?? "0");
-  const budget = totalBudget > 0 ? totalBudget : 10000000;
+  const budget = user.salary ?? 0;
   const overBudgetCount = categorySpending.filter((c) => c.is_over_budget).length;
+  const overMonthlyBudget = budget > 0 && monthExpense > budget;
 
   return {
     summary: {
@@ -107,8 +104,10 @@ export async function getDashboardForUser(user: DbUser): Promise<DashboardData> 
       month_expense: monthExpense,
       budget,
       budget_remaining: Math.max(0, budget - monthExpense),
+      salary: budget,
       pending_tasks: parseInt(pendingTasksResult.rows[0]?.count ?? "0", 10),
       over_budget_categories: overBudgetCount,
+      over_monthly_budget: overMonthlyBudget,
     },
     widgets: {
       today_expenses: todayExpensesResult.rows.map(mapExpenseRow),
